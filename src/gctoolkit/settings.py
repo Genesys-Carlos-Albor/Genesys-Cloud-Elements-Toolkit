@@ -8,6 +8,7 @@ SETTINGS_FILE = CONFIG_DIR / "settings.json"
 DEFAULTS = {
     "save_location": str(Path.home() / "Element Reports"),
     "open_after_export": True,
+    "check_for_updates": True,
 }
 
 # Genesys Cloud environment -> region code used as the report file name prefix (from GCAuthRegions.xlsx).

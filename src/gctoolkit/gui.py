@@ -3,11 +3,12 @@
 import queue
 import threading
 import tkinter as tk
+import webbrowser
 from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 from tkinter.scrolledtext import ScrolledText
 
-from . import __version__, export, profiles, settings
+from . import __version__, export, profiles, settings, updates
 from .client import GenesysClient
 from .reports import Report, load_all
 from .runner import run_report
@@ -68,6 +69,8 @@ class App(tk.Tk):
         self._build_settings_bar()
         self._refresh_profiles()
         self.after(100, self._poll_messages)
+        if self.config_data.get("check_for_updates", True):
+            self.after(1500, lambda: self._check_updates(manual=False))
 
     # ---------- layout ----------
 
@@ -140,6 +143,9 @@ class App(tk.Tk):
             bar, text="Open Excel and the folder when a report finishes",
             variable=self.open_after_var, command=self._save_settings,
         ).pack(side="left", padx=PAD)
+        ttk.Button(bar, text="Check for updates", command=lambda: self._check_updates(manual=True)).pack(
+            side="right", padx=PAD,
+        )
 
     # ---------- profiles ----------
 
@@ -263,6 +269,45 @@ class App(tk.Tk):
         self.config_data["open_after_export"] = self.open_after_var.get()
         settings.save(self.config_data)
 
+    # ---------- updates ----------
+
+    def _check_updates(self, manual: bool) -> None:
+        threading.Thread(
+            target=lambda: self.messages.put(("update", (manual, updates.latest_release()))), daemon=True,
+        ).start()
+
+    def _update_result(self, manual: bool, release: updates.Release | None) -> None:
+        if release is None:
+            if manual:
+                messagebox.showinfo("Check for updates", "Couldn't reach GitHub to check for updates. Try again later.")
+            return
+        newer = updates.parse_version(release.version) > updates.parse_version(__version__)
+        if not newer:
+            if manual:
+                messagebox.showinfo("Check for updates", f"You have the latest version ({__version__}).")
+            return
+        if not manual and release.version == self.config_data.get("skipped_version"):
+            return
+        self._log(f"Version {release.version} is available (you have {__version__}).")
+
+        notes = f"\n\nWhat's new:\n{release.notes[:600]}" if release.notes else ""
+        if updates.is_frozen_exe():
+            prompt = f"Version {release.version} is available (you have {__version__}).{notes}\n\nDownload it now?"
+            url = release.exe_url or release.page_url
+        else:
+            prompt = (
+                f"Version {release.version} is available (you have {__version__}).{notes}\n\n"
+                f"To update, run:\n{updates.PIP_UPGRADE}\n\nOpen the release page?"
+            )
+            url = release.page_url
+        if messagebox.askyesno("Update available", prompt):
+            webbrowser.open(url)
+            if updates.is_frozen_exe():
+                self._log("Downloading the new version. Close this app, then run the downloaded file in its place.")
+        elif not manual:
+            self.config_data["skipped_version"] = release.version
+            settings.save(self.config_data)
+
     # ---------- background work ----------
 
     def _start(self, banner: str, work, on_done=None) -> None:
@@ -287,6 +332,8 @@ class App(tk.Tk):
                 kind, payload = self.messages.get_nowait()
                 if kind == "log":
                     self._log(payload)
+                elif kind == "update":
+                    self._update_result(*payload)
                 else:
                     self.busy = False
                     self.progress.stop()

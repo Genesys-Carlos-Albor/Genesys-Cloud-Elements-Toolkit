@@ -1,0 +1,43 @@
+# Pushing a version tag (e.g. v0.2.0) runs the tests, builds the Windows exe and publishes a GitHub Release with it.
+# The tag must match __version__ in src/gctoolkit/__init__.py, which the app compares against when checking for updates.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Check the tag matches the app version
+        shell: pwsh
+        run: |
+          $version = python -c "import re; print(re.search(r'__version__ = \"(.+?)\"', open('src/gctoolkit/__init__.py').read()).group(1))"
+          if ("v$version" -ne "${{ github.ref_name }}") { throw "Tag ${{ github.ref_name }} does not match __version__ $version" }
+
+      - name: Install and test
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,build]"
+          python -m pytest -q
+
+      - name: Build exe
+        shell: pwsh
+        run: ./packaging/build_exe.ps1 -Python python
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.exe
+          generate_release_notes: true

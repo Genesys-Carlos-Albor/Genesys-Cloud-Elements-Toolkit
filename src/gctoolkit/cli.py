@@ -4,7 +4,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import profiles, settings
+from . import __version__, profiles, settings, updates
 from .client import ApiError, GenesysClient
 from .reports import load_all
 from .runner import run_report
@@ -94,6 +94,17 @@ def cmd_settings(args) -> None:
     print(json.dumps(config, indent=2))
 
 
+def cmd_version(args) -> None:
+    print(f"Genesys Cloud Elements Toolkit {__version__}")
+    release = updates.latest_release()
+    if release is None:
+        print("Couldn't check GitHub for a newer version.")
+    elif updates.parse_version(release.version) > updates.parse_version(__version__):
+        print(f"Version {release.version} is available: {release.page_url}\nTo update, run: {updates.PIP_UPGRADE}")
+    else:
+        print("You have the latest version.")
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="gctk", description="Genesys Cloud admin reports and tools")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -132,6 +143,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--save-location")
     p.add_argument("--open-after-export", choices=["on", "off"])
     p.set_defaults(func=cmd_settings)
+
+    p = sub.add_parser("version", help="Show the version and check GitHub for a newer one")
+    p.set_defaults(func=cmd_version)
     return parser
 
 

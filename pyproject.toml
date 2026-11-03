@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gc-toolkit"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Genesys Cloud admin reports and bulk tools (Python port of the Elements PowerShell scripts)"
 requires-python = ">=3.10"
 dependencies = [
@@ -26,6 +26,9 @@ gctk-app = "gctoolkit.gui:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.dynamic]
+version = { attr = "gctoolkit.__version__" }
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
