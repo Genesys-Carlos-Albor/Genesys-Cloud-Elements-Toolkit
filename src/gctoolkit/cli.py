@@ -4,7 +4,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import __version__, profiles, settings, updates
+from . import __version__, profiles, settings, updates, use_system_certificates
 from .client import ApiError, GenesysClient
 from .reports import load_all
 from .runner import run_report
@@ -150,6 +150,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> None:
+    use_system_certificates()
     args = build_parser().parse_args(argv)
     try:
         args.func(args)

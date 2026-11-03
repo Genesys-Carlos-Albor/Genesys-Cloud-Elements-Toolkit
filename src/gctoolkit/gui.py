@@ -8,7 +8,7 @@ from pathlib import Path
 from tkinter import filedialog, messagebox, ttk
 from tkinter.scrolledtext import ScrolledText
 
-from . import __version__, export, profiles, settings, updates
+from . import __version__, export, profiles, settings, updates, use_system_certificates
 from .client import GenesysClient
 from .reports import Report, load_all
 from .runner import run_report
@@ -358,6 +358,7 @@ class App(tk.Tk):
 
 
 def main() -> None:
+    use_system_certificates()
     App().mainloop()
 
 
