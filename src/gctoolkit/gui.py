@@ -10,7 +10,8 @@ from tkinter.scrolledtext import ScrolledText
 
 from . import __version__, export, profiles, settings, updates, use_system_certificates
 from .client import GenesysClient
-from .reports import Report, load_all
+from .gui_audit import AuditQueryDialog
+from .reports import Report, audit_logs, load_all
 from .runner import run_report
 
 PAD = 8
@@ -232,9 +233,27 @@ class App(tk.Tk):
             "Confirm changes", f"'{report.title}' will CHANGE data in org '{profile.name}'.\n\nContinue?", icon="warning",
         ):
             return
+        if report.options_form == "audit-query":
+            self._start(
+                f"\nLoading audit services for {profile.name}...",
+                lambda log: audit_logs.service_mapping(GenesysClient(profile)),
+                on_done=lambda services: self._ask_audit_query(report, profile, services),
+            )
+            return
+        self._launch(report, profile)
+
+    def _ask_audit_query(self, report: Report, profile: profiles.Profile, services: list[dict]) -> None:
+        dialog = AuditQueryDialog(self, services)
+        self.wait_window(dialog)
+        if dialog.result:
+            self._launch(report, profile, dialog.result)
+        else:
+            self._log("Cancelled.")
+
+    def _launch(self, report: Report, profile: profiles.Profile, options=None) -> None:
         self._start(
             f"\n=== {report.title} — {profile.name} ===",
-            lambda log: run_report(report, profile, log, open_after=False),
+            lambda log: run_report(report, profile, log, open_after=False, options=options),
             on_done=self._report_finished,
         )
 

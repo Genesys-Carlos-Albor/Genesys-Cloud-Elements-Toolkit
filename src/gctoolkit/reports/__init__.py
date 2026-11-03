@@ -37,6 +37,8 @@ class Report:
     sheet_name: str | None = None
     table_name: str | None = None
     table_style: str = "TableStyleLight16"
+    # Reports that need input before running (e.g. "audit-query") receive it as a third `run` argument.
+    options_form: str | None = None
 
     @property
     def file_label(self) -> str:
@@ -66,6 +68,7 @@ def register(**meta):
 
 def load_all() -> dict[str, Report]:
     from . import (  # noqa: F401
+        audit_logs,
         authorized_apps,
         divisions,
         groups,

@@ -19,11 +19,13 @@ def run_report(
     log: Log,
     output_dir: str | None = None,
     open_after: bool | None = None,
+    options=None,
 ) -> Path | None:
     """Returns the saved workbook path, or None when the report returned no rows."""
     config = settings.load()
     log(f"Running '{report.title}' against {profile.name} ({profile.environment})")
-    result = report.run(GenesysClient(profile), log)
+    client = GenesysClient(profile)
+    result = report.run(client, log, options) if report.options_form else report.run(client, log)
     if not result.rows:
         log("No data was returned; nothing to save.")
         return None
@@ -46,7 +48,8 @@ def run_report(
     for label, data in result.extra_json.items():
         extra = export.base_file_name(profile, label, separator=report.name_separator)
         export.write_json(data, folder / f"{extra}.json")
-    log(f"Saved {len(rows)} rows to {xlsx_path}")
+    extra_rows = sum(len(s.rows) for s in result.extra_sheets)
+    log(f"Saved {len(rows)} rows{f' (plus {extra_rows} on other sheets)' if extra_rows else ''} to {xlsx_path}")
 
     if config.get("open_after_export") if open_after is None else open_after:
         export.reveal_in_folder(xlsx_path)

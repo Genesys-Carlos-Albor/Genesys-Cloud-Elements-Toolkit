@@ -2,11 +2,12 @@ import argparse
 import getpass
 import json
 import sys
+from datetime import date, timedelta
 from pathlib import Path
 
 from . import __version__, profiles, settings, updates, use_system_certificates
 from .client import ApiError, GenesysClient
-from .reports import load_all
+from .reports import audit_logs, load_all
 from .runner import run_report
 
 
@@ -70,6 +71,52 @@ def cmd_reports(args) -> None:
         print(f"{r.key:<20} {r.category:<12} {flag:<12} {r.title}  [from {r.source_script}]")
 
 
+def choose(title: str, options: list[str], allow_all: bool = False) -> str | None:
+    """Numbered menu; returns the chosen option, or None for 'All' when allowed."""
+    if not sys.stdin.isatty():
+        raise SystemExit(f"Pass the {title.lower()} as an option when not running interactively.")
+    print(f"\n{title}:")
+    if allow_all:
+        print("  0. All")
+    for i, option in enumerate(options, start=1):
+        print(f"{i:>3}. {option}")
+    while True:
+        choice = input(f"Choose a {title.lower()} number: ").strip()
+        if allow_all and choice == "0":
+            return None
+        if choice.isdigit() and 1 <= int(choice) <= len(options):
+            return options[int(choice) - 1]
+
+
+def _pick(value: str | None, title: str, options: list[str], allow_all: bool) -> str | None:
+    if value is None:
+        return choose(title, options, allow_all)
+    if allow_all and value.lower() == "all":
+        return None
+    match = next((o for o in options if o.lower() == value.lower()), None)
+    if not match:
+        raise SystemExit(f"Unknown {title.lower()} '{value}'. Choices: {', '.join(options)}")
+    return match
+
+
+def audit_query_from_args(args, profile: profiles.Profile) -> audit_logs.AuditQuery:
+    services = audit_logs.service_mapping(GenesysClient(profile))
+    service_name = _pick(args.service, "Service", [s["name"] for s in services], allow_all=False)
+    service = next(s for s in services if s["name"] == service_name)
+    entity_type = _pick(args.entity, "Entity type", [e["name"] for e in service["entities"]], allow_all=True)
+    actions = sorted({a for e in service["entities"] if entity_type in (None, e["name"]) for a in e.get("actions") or []})
+    action = _pick(args.action, "Action", actions, allow_all=True)
+
+    today = date.today()
+    start = date.fromisoformat(args.date_from) if args.date_from else today - timedelta(days=6)
+    end = date.fromisoformat(args.date_to) if args.date_to else today
+    if start > end:
+        raise SystemExit("--from must be on or before --to.")
+    if start < audit_logs.earliest_start(today):
+        raise SystemExit(f"Audit logs only go back to {audit_logs.earliest_start(today)} (365 days).")
+    return audit_logs.AuditQuery(service_name, entity_type, action, start, end)
+
+
 def cmd_run(args) -> None:
     reports = load_all()
     if args.report not in reports:
@@ -80,7 +127,8 @@ def cmd_run(args) -> None:
         answer = input(f"'{report.title}' CHANGES data in org '{profile.name}'. Type the org name to continue: ")
         if answer.strip() != profile.name:
             raise SystemExit("Cancelled.")
-    run_report(report, profile, log, output_dir=args.output_dir, open_after=False if args.no_open else None)
+    options = audit_query_from_args(args, profile) if report.options_form == "audit-query" else None
+    run_report(report, profile, log, output_dir=args.output_dir, open_after=False if args.no_open else None, options=options)
 
 
 def cmd_settings(args) -> None:
@@ -137,6 +185,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--profile")
     p.add_argument("--output-dir")
     p.add_argument("--no-open", action="store_true")
+    audit = p.add_argument_group("get-audit-logs options (prompted for when missing)")
+    audit.add_argument("--service", help="Audit service, e.g. Routing")
+    audit.add_argument("--entity", help="Entity type, or 'all'")
+    audit.add_argument("--action", help="Action, or 'all'")
+    audit.add_argument("--from", dest="date_from", metavar="YYYY-MM-DD", help="First day (default: 6 days ago)")
+    audit.add_argument("--to", dest="date_to", metavar="YYYY-MM-DD", help="Last day (default: today)")
     p.set_defaults(func=cmd_run)
 
     p = sub.add_parser("settings", help="Show or change settings")
