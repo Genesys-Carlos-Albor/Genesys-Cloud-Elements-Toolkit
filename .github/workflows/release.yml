@@ -22,7 +22,7 @@ jobs:
       - name: Check the tag matches the app version
         shell: pwsh
         run: |
-          $version = python -c "import re; print(re.search(r'__version__ = \"(.+?)\"', open('src/gctoolkit/__init__.py').read()).group(1))"
+          $version = (Select-String -Path src/gctoolkit/__init__.py -Pattern '__version__ = "(.+?)"').Matches[0].Groups[1].Value
           if ("v$version" -ne "${{ github.ref_name }}") { throw "Tag ${{ github.ref_name }} does not match __version__ $version" }
 
       - name: Install and test
