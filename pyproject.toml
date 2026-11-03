@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gc-toolkit"
+version = "0.1.0"
+description = "Genesys Cloud admin reports and bulk tools (Python port of the Elements PowerShell scripts)"
+requires-python = ">=3.10"
+dependencies = [
+    "requests>=2.31",
+    "openpyxl>=3.1",
+    "keyring>=24",
+    "tomli>=2.0; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8", "pytest-cov>=5"]
+build = ["pyinstaller>=6.16"]
+
+[project.scripts]
+gctk = "gctoolkit.cli:main"
+
+[project.gui-scripts]
+gctk-app = "gctoolkit.gui:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

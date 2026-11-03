@@ -1,0 +1,27 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Run unit tests",
+            "type": "shell",
+            "command": "${config:python.defaultInterpreterPath}",
+            "args": ["-m", "pytest", "-v"],
+            "group": { "kind": "test", "isDefault": true },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Get Queues (choose org)",
+            "type": "shell",
+            "command": "${config:python.defaultInterpreterPath}",
+            "args": ["-m", "gctoolkit.cli", "run", "get-queues"],
+            "problemMatcher": []
+        },
+        {
+            "label": "Reinstall gc-toolkit package",
+            "type": "shell",
+            "command": "${config:python.defaultInterpreterPath}",
+            "args": ["-m", "pip", "install", "-e", ".[dev]"],
+            "problemMatcher": []
+        }
+    ]
+}

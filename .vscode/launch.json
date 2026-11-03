@@ -1,0 +1,71 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Open desktop app",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${config:python.defaultInterpreterPath}",
+            "module": "gctoolkit.gui",
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Run a report (choose report and org)",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${config:python.defaultInterpreterPath}",
+            "module": "gctoolkit.cli",
+            "args": ["run", "${input:report}"],
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "name": "Test login (choose org)",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${config:python.defaultInterpreterPath}",
+            "module": "gctoolkit.cli",
+            "args": ["profiles", "test"],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "List profiles",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${config:python.defaultInterpreterPath}",
+            "module": "gctoolkit.cli",
+            "args": ["profiles", "list"],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "Import all gc CLI profiles",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${config:python.defaultInterpreterPath}",
+            "module": "gctoolkit.cli",
+            "args": ["profiles", "import-gc"],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "List reports",
+            "type": "debugpy",
+            "request": "launch",
+            "python": "${config:python.defaultInterpreterPath}",
+            "module": "gctoolkit.cli",
+            "args": ["reports"],
+            "console": "integratedTerminal"
+        }
+    ],
+    "inputs": [
+        {
+            "id": "report",
+            "type": "pickString",
+            "description": "Which report do you want to run?",
+            "options": [
+                "get-queues", "get-users", "get-user-phones", "get-skills", "get-wrapup-codes", "get-skill-groups",
+                "get-groups", "get-roles", "get-permissions", "get-divisions", "get-oauth-clients", "get-authorized-apps"
+            ],
+            "default": "get-queues"
+        }
+    ]
+}
