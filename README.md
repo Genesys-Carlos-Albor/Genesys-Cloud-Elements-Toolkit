@@ -18,6 +18,18 @@ pip install git+https://github.com/Genesys-Carlos-Albor/Genesys-Cloud-Elements-T
 gctk-app
 ```
 
+## Updates
+
+The app checks GitHub for a newer release when it starts (and from **Check for updates**).
+If there is one, it offers to download the new exe; close the app and run the new file in place of the old one.
+Python installs update with:
+
+```bash
+pip install --upgrade git+https://github.com/Genesys-Carlos-Albor/Genesys-Cloud-Elements-Toolkit.git
+```
+
+`gctk version` shows the installed version and whether a newer one exists.
+
 ## First run
 
 Add an org profile with **Add…** (name, region such as `usw2.pure.cloud`, OAuth client ID and secret),
@@ -45,3 +57,11 @@ powershell -File packaging\build_exe.ps1   # builds dist\Genesys Cloud Elements 
 ```
 
 Reports live in `src/gctoolkit/reports/`, one module per report, registered with `@register(...)`.
+
+### Publishing a release
+
+1. Raise `__version__` in `src/gctoolkit/__init__.py` (e.g. `0.2.0`) and commit.
+2. Tag and push: `git tag v0.2.0` then `git push origin main v0.2.0`.
+
+The **Release** GitHub Action runs the tests, builds the exe and publishes the release with the exe attached.
+Installed apps see it the next time they start.
