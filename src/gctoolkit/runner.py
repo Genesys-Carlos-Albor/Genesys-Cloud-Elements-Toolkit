@@ -25,7 +25,13 @@ def run_report(
     config = settings.load()
     log(f"Running '{report.title}' against {profile.name} ({profile.environment})")
     client = GenesysClient(profile)
-    result = report.run(client, log, options) if report.options_form else report.run(client, log)
+    folder = report_folder(report, profile, Path(output_dir or config["save_location"]))
+    extra_args = {}
+    if report.options_form:
+        extra_args["options"] = options
+    if report.writes_files:
+        extra_args["folder"] = folder
+    result = report.run(client, log, **extra_args)
     if not result.rows:
         log("No data was returned; nothing to save.")
         return None
@@ -33,7 +39,8 @@ def run_report(
     if result.sort_by:
         rows = sorted(rows, key=lambda r: str(r.get(result.sort_by) or "").lower())
 
-    folder = report_folder(report, profile, Path(output_dir or config["save_location"]))
+    if report.workbook_folder:
+        folder = folder / report.workbook_folder
     folder.mkdir(parents=True, exist_ok=True)
     base = export.base_file_name(profile, report.file_label, separator=report.name_separator)
     xlsx_path = export.versioned_path(folder, base)

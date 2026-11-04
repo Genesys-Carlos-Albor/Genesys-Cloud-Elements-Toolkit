@@ -69,6 +69,19 @@ class GenesysClient:
     def get(self, path: str, **params):
         return self.request("GET", path, params=params or None)
 
+    def download(self, url: str, path, attempts: int = 3) -> None:
+        """Save a pre-signed download URL to `path`. No bearer token is sent; the URL carries its own signature."""
+        for attempt in range(1, attempts + 1):
+            try:
+                resp = self.session.get(url, timeout=self.timeout)
+                resp.raise_for_status()
+                path.write_bytes(resp.content)
+                return
+            except requests.RequestException:
+                if attempt == attempts:
+                    raise
+                time.sleep(2 * attempt)
+
     def get_all(self, path: str, page_size: int = 100, **params) -> list[dict]:
         """Collect 'entities' across every page, following nextUri (cursor paging) or pageNumber/pageCount."""
         entities: list[dict] = []

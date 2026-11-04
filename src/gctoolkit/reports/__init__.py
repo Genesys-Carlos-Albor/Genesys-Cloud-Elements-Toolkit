@@ -37,8 +37,12 @@ class Report:
     sheet_name: str | None = None
     table_name: str | None = None
     table_style: str = "TableStyleLight16"
-    # Reports that need input before running (e.g. "audit-query") receive it as a third `run` argument.
+    # Reports that need input before running (e.g. "audit-query") receive it as `run(..., options=...)`.
     options_form: str | None = None
+    # Reports that save their own files (e.g. CSV exports) receive the report folder as `run(..., folder=...)`.
+    writes_files: bool = False
+    # Subfolder of the report folder for the workbook and JSON.
+    workbook_folder: str | None = None
 
     @property
     def file_label(self) -> str:
@@ -70,6 +74,7 @@ def load_all() -> dict[str, Report]:
     from . import (  # noqa: F401
         audit_logs,
         authorized_apps,
+        data_tables,
         divisions,
         groups,
         oauth_clients,

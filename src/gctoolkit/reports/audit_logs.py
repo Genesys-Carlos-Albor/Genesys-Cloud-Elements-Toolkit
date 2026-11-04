@@ -185,7 +185,8 @@ def _summary(services: list[dict], query: AuditQuery) -> list[dict]:
     table_style="TableStyleDark10",
     freeze_panes="A2",
 )
-def get_audit_logs(client: GenesysClient, log: Log, query: AuditQuery) -> ReportResult:
+def get_audit_logs(client: GenesysClient, log: Log, options: AuditQuery) -> ReportResult:
+    query = options
     log(f"Service {query.service}, entity type {query.entity_type or 'all'}, action {query.action or 'all'}, "
         f"{query.start:%m/%d/%Y} to {query.end:%m/%d/%Y}")
     services = service_mapping(client)
