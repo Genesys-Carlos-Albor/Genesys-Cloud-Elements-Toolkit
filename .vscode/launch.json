@@ -63,7 +63,7 @@
             "description": "Which report do you want to run?",
             "options": [
                 "get-queues", "get-users", "get-user-phones", "get-skills", "get-wrapup-codes", "get-skill-groups",
-                "get-groups", "get-roles", "get-permissions", "get-divisions", "get-oauth-clients", "get-authorized-apps", "get-audit-logs", "export-data-tables", "export-data-table-schemas"
+                "get-groups", "get-roles", "get-permissions", "get-divisions", "get-oauth-clients", "get-authorized-apps", "get-audit-logs", "export-data-tables", "export-data-table-schemas", "export-flows"
             ],
             "default": "get-queues"
         }

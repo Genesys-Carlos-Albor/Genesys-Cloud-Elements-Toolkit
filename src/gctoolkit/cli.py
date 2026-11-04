@@ -7,7 +7,7 @@ from pathlib import Path
 
 from . import __version__, profiles, settings, updates, use_system_certificates
 from .client import ApiError, GenesysClient
-from .reports import audit_logs, load_all
+from .reports import audit_logs, flow_exports, load_all
 from .runner import run_report
 
 
@@ -117,6 +117,37 @@ def audit_query_from_args(args, profile: profiles.Profile) -> audit_logs.AuditQu
     return audit_logs.AuditQuery(service_name, entity_type, action, start, end)
 
 
+def flows_from_args(args, profile: profiles.Profile) -> list[dict]:
+    flows = flow_exports.list_flows(GenesysClient(profile))
+    if args.flow_type:
+        wanted = {t.upper() for t in args.flow_type}
+        flows = [f for f in flows if (f.get("type") or "").upper() in wanted]
+    if args.flow:
+        wanted = {name.lower() for name in args.flow}
+        chosen = [f for f in flows if f["id"].lower() in wanted or (f.get("name") or "").lower() in wanted]
+        missing = wanted - {f["id"].lower() for f in chosen} - {(f.get("name") or "").lower() for f in chosen}
+        if missing:
+            raise SystemExit(f"No flow named {', '.join(sorted(missing))}. Check the name or pass its ID.")
+        return chosen
+    if args.flow_type:
+        return flows
+    if not sys.stdin.isatty():
+        raise SystemExit("Pass --flow (name or ID, repeatable) or --flow-type when not running interactively.")
+    print("\nFlows:")
+    for i, f in enumerate(flows, start=1):
+        print(f"{i:>4}. {f.get('name')}  ({f.get('type')})")
+    while True:
+        try:
+            choice = input("Flow numbers to export (e.g. 1,4,7), or 'all': ").strip().lower()
+        except EOFError:
+            raise SystemExit("Cancelled.") from None
+        if choice == "all":
+            return flows
+        numbers = [part.strip() for part in choice.split(",") if part.strip()]
+        if numbers and all(n.isdigit() and 1 <= int(n) <= len(flows) for n in numbers):
+            return [flows[int(n) - 1] for n in dict.fromkeys(numbers)]
+
+
 def cmd_run(args) -> None:
     reports = load_all()
     if args.report not in reports:
@@ -127,7 +158,11 @@ def cmd_run(args) -> None:
         answer = input(f"'{report.title}' CHANGES data in org '{profile.name}'. Type the org name to continue: ")
         if answer.strip() != profile.name:
             raise SystemExit("Cancelled.")
-    options = audit_query_from_args(args, profile) if report.options_form == "audit-query" else None
+    options = None
+    if report.options_form == "audit-query":
+        options = audit_query_from_args(args, profile)
+    elif report.options_form == "flow-picker":
+        options = flows_from_args(args, profile)
     run_report(report, profile, log, output_dir=args.output_dir, open_after=False if args.no_open else None, options=options)
 
 
@@ -191,6 +226,9 @@ def build_parser() -> argparse.ArgumentParser:
     audit.add_argument("--action", help="Action, or 'all'")
     audit.add_argument("--from", dest="date_from", metavar="YYYY-MM-DD", help="First day (default: 6 days ago)")
     audit.add_argument("--to", dest="date_to", metavar="YYYY-MM-DD", help="Last day (default: today)")
+    flows = p.add_argument_group("export-flows options (prompted for when missing)")
+    flows.add_argument("--flow", action="append", help="Flow name or ID to export (repeatable)")
+    flows.add_argument("--flow-type", action="append", help="Flow type, e.g. INBOUNDCALL (repeatable); without --flow, exports every flow of these types")
     p.set_defaults(func=cmd_run)
 
     p = sub.add_parser("settings", help="Show or change settings")

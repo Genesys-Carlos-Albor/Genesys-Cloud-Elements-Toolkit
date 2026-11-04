@@ -11,7 +11,8 @@ from tkinter.scrolledtext import ScrolledText
 from . import __version__, export, profiles, settings, updates, use_system_certificates
 from .client import GenesysClient
 from .gui_audit import AuditQueryDialog
-from .reports import Report, audit_logs, load_all
+from .gui_flows import FlowPickerDialog
+from .reports import Report, audit_logs, flow_exports, load_all
 from .runner import run_report
 
 PAD = 8
@@ -240,10 +241,19 @@ class App(tk.Tk):
                 on_done=lambda services: self._ask_audit_query(report, profile, services),
             )
             return
+        if report.options_form == "flow-picker":
+            self._start(
+                f"\nLoading flows for {profile.name}...",
+                lambda log: flow_exports.list_flows(GenesysClient(profile)),
+                on_done=lambda flows: self._ask_options(report, profile, FlowPickerDialog(self, flows)),
+            )
+            return
         self._launch(report, profile)
 
     def _ask_audit_query(self, report: Report, profile: profiles.Profile, services: list[dict]) -> None:
-        dialog = AuditQueryDialog(self, services)
+        self._ask_options(report, profile, AuditQueryDialog(self, services))
+
+    def _ask_options(self, report: Report, profile: profiles.Profile, dialog: tk.Toplevel) -> None:
         self.wait_window(dialog)
         if dialog.result:
             self._launch(report, profile, dialog.result)
