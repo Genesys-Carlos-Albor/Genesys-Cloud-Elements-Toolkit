@@ -32,7 +32,7 @@ def run_report(
     if report.writes_files:
         extra_args["folder"] = folder
     result = report.run(client, log, **extra_args)
-    if not result.rows:
+    if not result.rows and not any(s.rows for s in result.extra_sheets):
         log("No data was returned; nothing to save.")
         return None
     rows = result.rows

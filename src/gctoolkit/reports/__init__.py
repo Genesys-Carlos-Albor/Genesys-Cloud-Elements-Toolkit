@@ -84,6 +84,7 @@ def load_all() -> dict[str, Report]:
         roles,
         skill_groups,
         skills,
+        trunks,
         user_phones,
         users,
         wrapup_codes,
