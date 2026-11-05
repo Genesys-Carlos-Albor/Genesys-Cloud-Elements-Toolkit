@@ -3,7 +3,7 @@ import re
 
 from ..client import GenesysClient
 from ..export import Sheet
-from ..fields import EMPTY, _blank, iso_part, names_by_id
+from ..fields import EMPTY, _blank, iso_date_time, names_by_id
 from . import Log, ReportResult, register
 
 GENERAL_SHEET = "Trunk Base Settings"
@@ -49,10 +49,7 @@ def _or_empty(value):
     return EMPTY if _blank(value) else value
 
 
-def _date_time(value) -> tuple:
-    """("yyyy-MM-dd", "HH:mm:ss") halves of an ISO timestamp, or Empty for both."""
-    date, time = iso_part(value, 0), iso_part(value, 1)
-    return (date, time[:8]) if date and time else (EMPTY, EMPTY)
+_date_time = iso_date_time
 
 
 def unique_by_id(items: list[dict]) -> list[dict]:

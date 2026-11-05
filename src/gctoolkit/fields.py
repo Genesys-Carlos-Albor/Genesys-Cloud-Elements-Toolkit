@@ -40,6 +40,31 @@ def iso_part(value: str | None, index: int, default=None):
     return value.split("T")[index]
 
 
+def iso_date_time(value: str | None, default=EMPTY) -> tuple:
+    """("yyyy-MM-dd", "HH:mm:ss") halves of an ISO-8601 timestamp, or `default` for both."""
+    date, time = iso_part(value, 0), iso_part(value, 1)
+    return (date, time[:8]) if date and time else (default, default)
+
+
+def flatten(obj, prefix: str = "") -> dict:
+    """Nested object as dotted columns; lists become one value per line, empty values give Empty."""
+    if isinstance(obj, dict):
+        columns = {}
+        for key, value in obj.items():
+            if key != "selfUri":
+                columns.update(flatten(value, f"{prefix}.{key}" if prefix else key))
+        return columns
+    if isinstance(obj, list) and obj and all(isinstance(item, dict) for item in obj):
+        merged: dict[str, list] = {}
+        for item in obj:
+            for key, value in flatten(item, prefix).items():
+                merged.setdefault(key, []).append(value)
+        return {key: joined(values) for key, values in merged.items()}
+    if isinstance(obj, list):
+        return {prefix: joined(obj)}
+    return {prefix: EMPTY if _blank(obj) else obj}
+
+
 def to_datetime(value: str | None, default=None):
     """ISO-8601 UTC timestamp as a naive datetime, which Excel stores as a real date value."""
     if _blank(value):

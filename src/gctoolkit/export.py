@@ -42,7 +42,8 @@ def _cell_value(value):
     if isinstance(value, (dict, list)):
         value = json.dumps(value, ensure_ascii=False)
     if isinstance(value, str):
-        value = ILLEGAL_CHARACTERS_RE.sub("", value)[:EXCEL_CELL_LIMIT]
+        # A stored "\r\n" shows as an extra blank line in Excel.
+        value = ILLEGAL_CHARACTERS_RE.sub("", value.replace("\r\n", "\n"))[:EXCEL_CELL_LIMIT]
     return value
 
 
