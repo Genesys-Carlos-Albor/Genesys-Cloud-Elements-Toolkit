@@ -8,6 +8,7 @@ They are Python ports of the Elements PowerShell scripts.
 
 **Windows:** download `Genesys Cloud Elements Toolkit.exe` from the
 [Releases](https://github.com/Genesys-Carlos-Albor/Genesys-Cloud-Elements-Toolkit/releases) page and run it.
+The instruction manual is attached to the same release.
 No Python is needed. The exe is not code-signed, so the first time Windows SmartScreen may say
 "Windows protected your PC": choose **More info**, then **Run anyway**.
 
@@ -63,5 +64,7 @@ Reports live in `src/gctoolkit/reports/`, one module per report, registered with
 1. Raise `__version__` in `src/gctoolkit/__init__.py` (e.g. `0.2.0`) and commit.
 2. Tag and push: `git tag v0.2.0` then `git push origin main v0.2.0`.
 
-The **Release** GitHub Action runs the tests, builds the exe and publishes the release with the exe attached.
+The **Release** GitHub Action runs the tests, builds the exe and publishes the release with the exe and
+`docs/Genesys Cloud Elements Toolkit Instruction Manual.docx` attached. Update the manual in `docs/` before tagging:
+releases are immutable, so files can't be added once one is published.
 Installed apps see it the next time they start.

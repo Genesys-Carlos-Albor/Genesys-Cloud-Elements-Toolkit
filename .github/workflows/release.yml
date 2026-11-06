@@ -1,4 +1,5 @@
-# Pushing a version tag (e.g. v0.2.0) runs the tests, builds the Windows exe and publishes a GitHub Release with it.
+# Pushing a version tag (e.g. v0.2.0) runs the tests, builds the Windows exe and publishes a GitHub Release
+# with the exe and the instruction manual (docs/*.docx). Releases are immutable, so nothing can be added afterwards.
 # The tag must match __version__ in src/gctoolkit/__init__.py, which the app compares against when checking for updates.
 name: Release
 
@@ -39,5 +40,7 @@ jobs:
       - name: Publish release
         uses: softprops/action-gh-release@v2
         with:
-          files: dist/*.exe
+          files: |
+            dist/*.exe
+            docs/*.docx
           generate_release_notes: true
